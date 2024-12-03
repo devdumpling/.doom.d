@@ -18,12 +18,55 @@
 ;; - `doom-symbol-font' -- for symbols
 ;; - `doom-serif-font' -- for the `fixed-pitch-serif' face
 ;;
-;; See 'C-h v doom-font' for documentation and more examples of what they
-;; accept. For example:
+;; See 'C-h v doom-font' for documentation and more examples of what they accept
+;; NOTE: Use 'M-x doom/reload-font and eval-region to test fonts'
 ;;
-;;(setq doom-font (font-spec :family "Fira Code" :size 12 :weight 'semi-light)
-;;      doom-variable-pitch-font (font-spec :family "Fira Sans" :size 13))
-;;
+;; FONTS
+;; Monaspice
+;; NOTE: I like this setup a lot. The major advantage is having a bunch of fonts
+;; that are made to work together. I feel like there's a lot of room for customization here.
+(setq doom-font (font-spec :family "MonaspiceNe Nerd Font" :size 13 :weight 'regular)
+      doom-variable-pitch-font (font-spec :family "MonaspiceNe Nerd Font" :size 16)
+      doom-symbol-font (font-spec :family "MonaspiceNe Nerd Font")
+      doom-big-font (font-spec :family "MonaspiceNe Nerd Font" :size 24))
+
+(custom-set-faces!
+  '(font-lock-comment-face :family "MonaspiceRn Nerd Font" :weight light)
+  '(font-lock-constant-face :weight medium)
+  '(font-lock-doc-face :family "MonaspiceXe Nerd Font")
+  ;; '(font-lock-type-face)
+  ;; '(font-lock-function-name-face)
+  '(font-lock-string-face :slant oblique))
+
+;; VictorMono
+;; (setq doom-font (font-spec :family "VictorMono Nerd Font" :size 13 :weight 'regular)
+;;       doom-variable-pitch-font (font-spec :family "VictorMono Nerd Font" :size 14)
+;;       doom-symbol-font (font-spec :family "VictorMono Nerd Font")
+;;       doom-big-font (font-spec :family "VictorMono Nerd Font" :size 24))
+
+;; (custom-set-faces!
+;;   '(font-lock-comment-face :family "VictorMono Nerd Font" :slant italic)
+;;   '(font-lock-constant-face :slant italic)
+;;   '(font-lock-doc-face :family "VictorMono Nerd Font")
+;;   ;;'(font-lock-type-face)
+;;   ;;'(font-lock-function-name-face)
+;;   '(font-lock-string-face :slant oblique))
+
+;; Caskaydia
+;; (setq doom-font (font-spec :family "CaskaydiaCove Nerd Font" :size 13 :weight 'normal)
+;;       doom-variable-pitch-font (font-spec :family "CaskaydiaCove Nerd Font" :size 14)
+;;       doom-symbol-font (font-spec :family "CaskaydiaCove Nerd Font")
+;;       doom-big-font (font-spec :family "CaskaydiaCove Nerd Font" :size 24))
+
+;; ;; custom facing
+;; (custom-set-faces!
+;;   '(font-lock-comment-face :family "CaskaydiaCove Nerd Font" :weight light :slant oblique)
+;;   '(font-lock-constant-face :weight medium)
+;;   '(font-lock-doc-face :family "CaskaydiaCove Nerd Font")
+;;   ;;'(font-lock-type-face)
+;;   ;;'(font-lock-function-name-face)
+;;   '(font-lock-string-face :slant oblique))
+
 ;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
 ;; up, `M-x eval-region' to execute elisp code, and 'M-x doom/reload-font' to
 ;; refresh your font settings. If Emacs still can't find your font, it likely
@@ -32,7 +75,7 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-one)
+(setq doom-theme 'catppuccin)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -74,3 +117,33 @@
 ;;
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
+
+;; Use 'jk' as an alternate to escape to exit meow-insert-mode
+;; https://github.com/meow-edit/meow/discussions/168
+(after! meow
+  (setq meow-two-char-escape-sequence "jk")
+  (setq meow-two-char-escape-delay 0.5)
+
+  (defun meow--two-char-exit-insert-state (s)
+    (when (meow-insert-mode-p)
+      (let ((modified (buffer-modified-p)))
+        (insert (elt s 0))
+        (let* ((second-char (elt s 1))
+               (event
+                (if defining-kbd-macro
+                    (read-event nil nil)
+                  (read-event nil nil meow-two-char-escape-delay))))
+          (when event
+            (if (and (characterp event) (= event second-char))
+                (progn
+                  (backward-delete-char 1)
+                  (set-buffer-modified-p modified)
+                  (meow--execute-kbd-macro "<escape>"))
+              (push event unread-command-events)))))))
+
+  (defun meow-two-char-exit-insert-state ()
+    (interactive)
+    (meow--two-char-exit-insert-state meow-two-char-escape-sequence))
+
+  (define-key meow-insert-state-keymap (substring meow-two-char-escape-sequence 0 1)
+              #'meow-two-char-exit-insert-state))
